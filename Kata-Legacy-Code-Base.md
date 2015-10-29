@@ -305,7 +305,7 @@ public class SecurityManager {
 			return;
 		}
 
-                char[] hashedPasswordChars = hashProvider.hash(password);
+		char[] hashedPasswordChars = hashProvider.hash(password);
 
 		printStream.println(String.format("Saving Details for User (%s, %s, %s)\n",
                 userName,
