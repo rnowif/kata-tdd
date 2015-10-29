@@ -143,3 +143,114 @@ public class SecurityManagerTest {
     }
 }
 ```
+
+## Premier refactor
+
+Tout d'abord, on va renommer les variables au nom flou dans la méthode de production. Ensuite, on va extraire les streams en les mettant en paramètre de la méthode. On peut ainsi supprimer les méthodes protected et le test n'a plus besoin de surcharger la classe.
+
+Voici le code de production à la fin de cette étape :
+
+```java
+public class SecurityManager {
+
+	public static void createUser() {
+        new SecurityManager()
+                .createUserNonStatic(System.out, System.in);
+    }
+
+	public void createUserNonStatic(PrintStream printStream, InputStream inputStream) {
+		Scanner scanner = new Scanner(inputStream);
+
+        printStream.print("Enter a username:");
+        String userName = scanner.next();
+		printStream.print("Enter your full name:");
+	    String fullName = scanner.next();
+		printStream.print("Enter your password:");
+		String password = scanner.next();
+		printStream.print("Re-enter your password:");
+		String confirmationPassword = scanner.next();
+		scanner.close();
+
+		if (!password.equals(confirmationPassword)) {
+			printStream.println("The passwords don't match !");
+			return;
+		}
+
+		if (password.length() < 8) {
+			printStream.println("Password must be at least 8 characters in length !");
+			return;
+		}
+
+		// Encrypt the password (just reverse it, should be secure)
+		char[] hashedPasswordChars = password.toCharArray();
+		ArrayUtils.reverse(hashedPasswordChars);
+
+		printStream.println(String.format("Saving Details for User (%s, %s, %s)\n",
+                userName,
+                fullName,
+                Arrays.toString(hashedPasswordChars)));
+	}
+}
+```
+
+Voici le code de test à la fin de cette étape :
+
+```java
+public class SecurityManagerTest {
+
+    @Test
+    public void should_stop_if_password_dont_match() {
+
+        PrintStream printStream = mock(PrintStream.class);
+        InputStream inputStream = inputStreamFromResponses("Reno", "Humbert", "passwd", "Password");
+
+        SecurityManager securityManager = newSecurityManager();
+
+        securityManager.createUserNonStatic(printStream, inputStream);
+
+        verifyQuestions(printStream);
+        verify(printStream).println("The passwords don't match !");
+    }
+
+    @Test
+    public void should_stop_if_password_less_than_8_char() {
+        PrintStream printStream = mock(PrintStream.class);
+        InputStream inputStream = inputStreamFromResponses("Reno", "Humbert", "passwd", "passwd");
+
+        SecurityManager securityManager = newSecurityManager();
+
+        securityManager.createUserNonStatic(printStream, inputStream);
+
+        verifyQuestions(printStream);
+        verify(printStream).println("Password must be at least 8 characters in length !");
+    }
+
+    @Test
+    public void should_print_final_details() {
+        PrintStream printStream = mock(PrintStream.class);
+        InputStream inputStream = inputStreamFromResponses("Reno", "Humbert", "Admin01!", "Admin01!");
+
+        SecurityManager securityManager = newSecurityManager();
+
+        securityManager.createUserNonStatic(printStream, inputStream);
+
+        verifyQuestions(printStream);
+        verify(printStream).println("Saving Details for User (Reno, Humbert, [!, 1, 0, n, i, m, d, A])\n");
+    }
+
+    private void verifyQuestions(PrintStream printStream) {
+        verify(printStream).print("Enter a username:");
+        verify(printStream).print("Enter your full name:");
+        verify(printStream).print("Enter your password:");
+        verify(printStream).print("Re-enter your password:");
+    }
+
+    private SecurityManager newSecurityManager() {
+        return new SecurityManager();
+    }
+
+    private InputStream inputStreamFromResponses(String... responses) {
+        return new ByteArrayInputStream(String.join("\n", responses).getBytes());
+    }
+}
+```
