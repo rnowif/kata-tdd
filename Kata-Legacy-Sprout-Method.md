@@ -57,7 +57,7 @@ private void createUserNonStatic(UserSender userSender) {
    // [Snip]
 }
 ```
-Il faut modifier l'appel de la méthode pour lui injecter une implémentation de UserSender.
+Il faut modifier l'appel de la méthode pour lui injecter une implémentation de `UserSender`.
 
 ```java
 public static void createUser() {
@@ -65,6 +65,6 @@ public static void createUser() {
 }
 ```
 
-## Développement en TDD de RestUserSender
+## Développement en TDD de `RestUserSender`
 
-Désormais, il est possible de développer le RestUserSender en TDD.
+Désormais, il est possible de développer le `RestUserSender` en TDD.
