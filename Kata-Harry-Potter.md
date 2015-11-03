@@ -103,21 +103,22 @@ And J'ajoute 1 livre de Harry Potter Tome 2
 Then Le prix du panier est 15.20€
 ```
 
-Passer du calcul du prix pour un livre à une réduction me parait une marche trop haute. Je vais donc tout d'abord calculer le prix pour deux livres identiques en TDD.
+Passer du calcul du prix pour un livre à une réduction me parait une marche trop haute. Je vais donc tout d'abord calculer le prix pour deux livres en TDD.
 
 ```java
     @Test
-    public void should_cost_two_books_price_when_two_identical_books() {
+    public void should_cost_two_books_price_when_two_books() {
         Basket basket = new Basket();
-        Book book = new Book(1);
+        Book tome1 = new Book(1);
+        Book tome2 = new Book(2);
 
-        basket.addBook(book);
-        basket.addBook(book);
+        basket.addBook(tome1);
+        basket.addBook(tome2);
 
         assertThat(
                 basket.totalPrice()
         ).isEqualTo(
-                book.price().multiply(BigDecimal.valueOf(2))
+                tome1.price().add(tome2.price())
         );
     }
 ```
@@ -141,3 +142,42 @@ public class Basket {
     }
 }
 ```
+
+Ensuite, je modifie mon test pour prendre en compte la discount.
+
+```java
+    @Test
+    public void should_apply_5_pct_discount_when_two_different_books() {
+        Basket basket = new Basket();
+        Book tome1 = new Book(1);
+        Book tome2 = new Book(2);
+
+        basket.addBook(tome1);
+        basket.addBook(tome2);
+
+        assertThat(
+                basket.totalPrice()
+        ).isCloseTo(
+                tome1.price().add(tome2.price()).multiply(BigDecimal.valueOf(0.95)),
+                Percentage.withPercentage(0.1)
+        );
+    }
+```
+Et mon code de `Basket` devient alors :
+
+```java
+    public BigDecimal totalPrice() {
+        BigDecimal total = books.stream()
+                .map(Book::price)
+                .reduce(BigDecimal::add)
+                .orElse(BigDecimal.ZERO);
+
+        if (books.size() == 2) {
+            total = total.multiply(BigDecimal.valueOf(0.95));
+        }
+
+        return total;
+    }
+```
+
+Le test Cucumber passe au vert. Je ne fais pas encore de refacto dans `Basket` car il n'y a pas de duplication évidente.
