@@ -91,3 +91,53 @@ public class BookTest {
 ```
 
 Une fois que cette méthode est fonctionnelle, le test Cucumber passe.
+
+## Ajout d'un premier discount
+
+La nouvelle feature est la suivante :
+```
+Scenario: Une remise de 5% pour deux livres différents
+Given Un panier
+When J'ajoute 1 livre de Harry Potter Tome 1
+And J'ajoute 1 livre de Harry Potter Tome 2
+Then Le prix du panier est 15.20€
+```
+
+Passer du calcul du prix pour un livre à une réduction me parait une marche trop haute. Je vais donc tout d'abord calculer le prix pour deux livres identiques en TDD.
+
+```java
+    @Test
+    public void should_cost_two_books_price_when_two_identical_books() {
+        Basket basket = new Basket();
+        Book book = new Book(1);
+
+        basket.addBook(book);
+        basket.addBook(book);
+
+        assertThat(
+                basket.totalPrice()
+        ).isEqualTo(
+                book.price().multiply(BigDecimal.valueOf(2))
+        );
+    }
+```
+
+La classe `Basket` devient alors :
+
+```java
+public class Basket {
+
+    private List<Book> books = new ArrayList<>();
+
+    public void addBook(Book book) {
+        books.add(book);
+    }
+
+    public BigDecimal totalPrice() {
+        return books.stream()
+                .map(Book::price)
+                .reduce(BigDecimal::add)
+                .orElse(BigDecimal.ZERO);
+    }
+}
+```
