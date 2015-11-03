@@ -44,3 +44,50 @@ public class BasketPriceStepDefs {
 ```
 
 Les classes `Basket` et `Book` sont créées vides, tout comme les méthodes utilisées. Le test Cucumber ne passe pas.
+
+## Développement de Basket
+Un panier vide coute 0€.
+En TDD, créer une classe pour tester ce cas.
+
+```java
+public class BasketTest {
+
+    @Test
+    public void should_cost_0_when_no_book() {
+        Basket basket = new Basket();
+
+        assertThat(basket.totalPrice()).isEqualTo(BigDecimal.ZERO);
+    }
+}
+```
+
+Pour tester l'intégration de `Basket` avec `Book`, on va utiliser le test Cucumber. On va donc implémenter la méthode `addBooks(Book)` et `totalPrice`.
+
+```java
+public class Basket {
+
+    private Book book;
+
+    public void addBook(Book book) {
+        this.book = book;
+    }
+
+    public BigDecimal totalPrice() {
+        return book == null ? BigDecimal.ZERO : book.price();
+    }
+}
+```
+Le prix du livre va être délocalisé dans `Book`. On va donc coder la méthode `price` de `Book` en TDD.
+
+```java
+public class BookTest {
+
+    @Test
+    public void should_cost_8() {
+        Book book = new Book(1);
+        assertThat(book.price()).isEqualTo(BigDecimal.valueOf(8.0));
+    }
+}
+```
+
+Une fois que cette méthode est fonctionnelle, le test Cucumber passe.
