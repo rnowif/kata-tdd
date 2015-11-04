@@ -181,3 +181,69 @@ Et mon code de `Basket` devient alors :
 ```
 
 Le test Cucumber passe au vert. Je ne fais pas encore de refacto dans `Basket` car il n'y a pas de duplication évidente.
+
+## Ajout du discount de 10%
+
+On ajoute la feature suivante :
+
+```
+Scenario: Une remise de 10% pour trois livres différents
+Given Un panier
+When J'ajoute 1 livre de Harry Potter Tome 1
+And J'ajoute 1 livre de Harry Potter Tome 2
+And J'ajoute 1 livre de Harry Potter Tome 3
+Then Le prix du panier est 21.60€
+```
+
+Le code pour la faire passer est le suivant
+
+```java
+    public BigDecimal totalPrice() {
+        BigDecimal total = books.stream()
+                .map(Book::price)
+                .reduce(BigDecimal::add)
+                .orElse(BigDecimal.ZERO);
+
+        if (books.size() == 2) {
+            total = total.multiply(BigDecimal.valueOf(0.95));
+        }
+
+        if (books.size() == 3) {
+            total = total.multiply(BigDecimal.valueOf(0.90));
+        }
+
+        return total;
+    }
+```
+
+On voit une répétition, donc on va extraire ce comportement dans une `Map` pour contenir les discounts. La classe Basket devient alors la suivante :
+
+```java
+public class Basket {
+
+    private List<Book> books = new ArrayList<>();
+    private Map<Integer, BigDecimal> discounts = new HashMap<>();
+
+    public Basket() {
+        discounts.put(2, BigDecimal.valueOf(0.95));
+        discounts.put(3, BigDecimal.valueOf(0.90));
+    }
+
+    public void addBook(Book book) {
+        books.add(book);
+    }
+
+    public BigDecimal totalPrice() {
+        BigDecimal total = books.stream()
+                .map(Book::price)
+                .reduce(BigDecimal::add)
+                .orElse(BigDecimal.ZERO);
+
+        return discounts.entrySet().stream()
+                .filter(entry -> entry.getKey().equals(books.size()))
+                .map(entry -> total.multiply(entry.getValue()))
+                .findFirst()
+                .orElse(total);
+    }
+}
+```
